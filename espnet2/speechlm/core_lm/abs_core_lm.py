@@ -49,7 +49,7 @@ class AbsCoreLM(torch.nn.Module, ABC):
             `espnet2.speechlm.module.<model_name>.py`.
         (2) or, Build with HuggingFace model/modules:
             Put everyhing in `espnet2.speechlm.core_lm.<model_name>.py`. Usually
-            this is just a warpper that bridges HF models into Espnet SpeechLM.
+            this is just a wrapper that bridges HF models into Espnet SpeechLM.
     Reminder: try to avoid any model dependency beyond espnet2.speechlm
 
     """

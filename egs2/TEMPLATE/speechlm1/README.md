@@ -311,12 +311,12 @@ asr_100-121669-0001 459
 asr_100-121669-0002 891
 ...
 ```
-  * Along this way, we will also shared the `data.json` file by ${ngpu}. See [Sharded Dataset](#sharded-dataset)
+  * Along this way, we will also shard the `data.json` file by ${ngpu}. See [Sharded Dataset](#sharded-dataset)
   * A task prefix `asr_` is added to each `<example_id>`. See [Multi-Task Training and Multi-Task Dataset](#multi-task-training-and-multi-task-dataset)
 
 ### Stage 8: Training
 The training process is to train the LM using the spliced token sequences and compute the cross-entropy loss over the `target entry` segments.
-  * The top-level model is in `espnet2/speechlm/espnet_model.py`, which is a warpper for the real SpeechLM implementation `corelm`.
+  * The top-level model is in `espnet2/speechlm/espnet_model.py`, which is a wrapper for the real SpeechLM implementation `corelm`.
     * `corelm` refer to a SpeechLM architecture and are in `<espnet>/wse3espnet2/speechlm/corelm`
   * Regardless what `corelm` you choose, its input interface for forward are the same:
     * `dec_seq`: decoder sequence, of size `[B, T, N]`.
@@ -445,7 +445,7 @@ Note: Vall-E cannot be used when data in `codec` modality doesn't exist or `N=1`
 
 ### HuggingFace Transformer Implementation and Pre-trained Models
 We provide a unified interface for ESPnet built-in Transformer and HuggingFace Transformer models.
-  * Check the warpper module in `<espnet>/epsnet2/speechlm/module/transformer.py`
+  * Check the wrapper module in `<espnet>/epsnet2/speechlm/module/transformer.py`
   * When `hf_model_tag` is not set, ESPnet builtin Transformer is used;
   * When `hf_model_tag` is set, the corresponidng HuggingFace Transformer model and its weight is loaded, the `text_bpe` part of the embedding table and lm_head will be overrided.
     * If use Huggingface model, make sure you set the consistent BPE model. Check the `--bpemode` and `--bpemodel` argument in `speechlm.sh`

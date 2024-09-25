@@ -93,6 +93,12 @@ SPEECHLM_TASKS["asr"] = SpeechLMTaskTemplate(
     targets=[("text", "text_bpe", "text")],
 )
 
+# Automated Audio Captioning
+SPEECHLM_TASKS["aac"] = SpeechLMTaskTemplate(
+    conditions=[("wav.scp", "codec", "kaldi_ark")],
+    targets=[("text", "text_bpe", "text")],
+)
+
 SPEECHLM_TASKS["ssl_asr"] = SpeechLMTaskTemplate(
     conditions=[("wav.scp", "ssl", "kaldi_ark")],
     targets=[("text", "text_bpe", "text")],
