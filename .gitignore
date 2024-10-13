@@ -54,6 +54,7 @@ egs*/*/*/.cache*
 egs*/*/*/pretrained_models*
 egs*/fisher_callhome_spanish/*/local/mapping*
 egs2/test/*
+egs2/wavcaps/speechlm1/local/copied_data/*
 
 # tools related
 tools/chainer
