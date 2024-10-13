@@ -34,7 +34,7 @@ fs=none
 segments=
 suffix=
 
-ref_channels=
+ref_channels=1
 utt2ref_channels=
 
 audio_format=wav

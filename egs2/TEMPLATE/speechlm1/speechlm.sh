@@ -538,7 +538,7 @@ if ! ${skip_train}; then
 
             # 3. Submit jobs
             log "SpeechLM collect_stats for ${data_json} ... log: ${this_stats_dir}/logs/collect_stat.*.log"
-            # shellcheck disable=SC2046,SC2086
+            shellcheck disable=SC2046,SC2086
             ${train_cmd} JOB=1:"${nj}" ${this_stats_dir}/logs/collect_stat.JOB.log \
                 ${python} -m "espnet2.bin.speechlm_train" \
                     --collect_stats true \
