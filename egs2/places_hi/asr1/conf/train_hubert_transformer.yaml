@@ -1,14 +1,8 @@
 # network architecture
 # encoder related
-encoder: transformer
+encoder: hubert
 encoder_conf:
-    input_layer: "conv2d2"
-    num_blocks: 4
-    linear_units: 1024
-    dropout_rate: 0.1
-    output_size: 128  # dimension of attention
-    attention_heads: 4
-    attention_dropout_rate: 0.0
+    hubert_url: https://dl.fbaipublicfiles.com/hubert/hubert_large_ll60k.pt
 
 # decoder related
 decoder: transformer
@@ -17,19 +11,6 @@ decoder_conf:
     num_blocks: 4
     linear_units: 1024
     dropout_rate: 0.1
-
-
-# frontend: s3prl
-# frontend_conf:
-#   frontend_conf:
-#       upstream: hubert_large_ll60k  # Note: If the upstream is changed, please change the input_size in the preencoder
-#   download_dir: ./hub
-#   multilayer_feature: True
-
-# preencoder: linear
-# preencoder_conf:
-#     input_size: 1024  # Note: If the upstream is changed, please change this value accordingly.
-#     output_size: 80
 
 # hybrid CTC/attention
 model_conf:
@@ -42,16 +23,16 @@ batch_type: folded
 batch_size: 16
 
 # optimization related
-optim: adam
+optim: adamw
 accum_grad: 4
 grad_clip: 5
 patience: 15
 max_epoch: 100
 optim_conf:
-    lr: 1
-scheduler: noamlr
+    lr: 1.e-4
+scheduler: linear
 scheduler_conf:
-    warmup_steps: 4000
+    warmup_steps: 1000
 
 # others:
 best_model_criterion:
