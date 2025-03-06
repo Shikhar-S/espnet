@@ -36,13 +36,12 @@ num_workers: 2 # dataloader workers
 
 # BEATs implementation takes care of generating mel spectrogram, normalization and specaug
 frontend: none
-input_size: 1
-normalize: none
+input_size: 1 # important to set input_size to 1 if frontend is none
+normalize: none # BEATs code does global mean and variance normalization
 
 encoder: beats
 encoder_conf:
     beats_ckpt_path: CHECKPOINT_PATH
-    # beats_ckpt_path:
     beats_config:
         layer_wise_gradient_decay_ratio: 0.3
         encoder_layerdrop: 0.1
@@ -64,3 +63,19 @@ model_conf:
     mixup_probability: 0.8
     lsm_weight: 0.0  # label smoothing weight, per label
     log_epoch_metrics: true
+
+lightning_conf:
+    #### args that are passed directly to the trainer
+    log_every_n_steps: 250
+    # debugging args
+    # limit_train_batches: 100
+    # limit_val_batches: 3
+    #### args used for other purposes
+    strategy: ddp
+    strategy_conf:
+        find_unused_parameters: true
+
+    best_model_criterion:
+    -   - valid/epoch_mAP     # metric to monitor
+        - max           # max or min
+        - 1            # number of best models to keep
