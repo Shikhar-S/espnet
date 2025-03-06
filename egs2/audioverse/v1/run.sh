@@ -64,7 +64,7 @@ if [ -z "$run_name" ]; then
     log "Warning: --run_name is empty we will use timestamp: $run_name"
 fi
 
-exp_dir="exp/${run_name}"
+exp_dir="$(pwd)/exp/${run_name}"
 mkdir -p "$exp_dir"
 log "Created exp directory: $exp_dir"
 
@@ -82,7 +82,6 @@ done
 
 # Register all recipe runners relative to this script
 # Format: [recipe_name]="[path_to_script]|[additional_arguments]"
-# Dots are not allowed in recipe names
 declare -A recipe_runners
 
 # Captioning tasks
@@ -101,24 +100,30 @@ declare -A recipe_runners
 
 # General sound Multi-label tasks
 # recipe_runners["audioset2m"]="../../as2m/cls1/run.sh|"
-# recipe_runners["audioset20k"]="../../as20k/cls1/run.sh|"
+recipe_runners["audioset20k"]="../../as20k/cls1/run.sh|"
 # recipe_runners["fsd50k"]="../../fsd/cls1/run.sh|"
 
-recipe_runners["esc50"]="../../esc50/asr1/run.sh|"
+# ESC-50 folds
+recipe_runners["esc50_f1"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 1,"
+recipe_runners["esc50_f2"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 2"
+recipe_runners["esc50_f3"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 3"
+recipe_runners["esc50_f4"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 4"
+recipe_runners["esc50_f5"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 5"
+
 
 # Register BEANS detection tasks
-# recipe_runners["beans_dcase"]="../../run_dcase.sh|"
-# recipe_runners["beans_enabirds"]="../../run_enabirds.sh|"
-# recipe_runners["beans_gibbons"]="../../run_gibbons.sh|"
-# recipe_runners["beans_hiceas"]="../../run_hiceas.sh|"
-# recipe_runners["beans_rfcx"]="../../run_rfcx.sh|"
+# recipe_runners["beans_dcase"]="../../beans/cls1/run_dcase.sh|"
+# recipe_runners["beans_enabirds"]="../../beans/cls1/run_enabirds.sh|"
+# recipe_runners["beans_gibbons"]="../../beans/cls1/run_gibbons.sh|"
+# recipe_runners["beans_hiceas"]="../../beans/cls1/run_hiceas.sh|"
+# recipe_runners["beans_rfcx"]="../../beans/cls1/run_rfcx.sh|"
 
 # Register BEANS classification tasks
-recipe_runners["beans_watkins"]="../../run_watkins.sh|"
-recipe_runners["beans_bats"]="../../run_bats.sh|"
-recipe_runners["beans_cbi"]="../../run_cbi.sh|"
-recipe_runners["beans_humbugdb"]="../../run_humbugdb.sh|"
-recipe_runners["beans_dogs"]="../../run_dogs.sh|"
+recipe_runners["beans_watkins"]="../../beans/cls1/run_watkins.sh|"
+recipe_runners["beans_bats"]="../../beans/cls1/run_bats.sh|"
+recipe_runners["beans_cbi"]="../../beans/cls1/run_cbi.sh|"
+recipe_runners["beans_humbugdb"]="../../beans/cls1/run_humbugdb.sh|"
+recipe_runners["beans_dogs"]="../../beans/cls1/run_dogs.sh|"
 
 # Music and machine sound tasks
 # recipe_runners["gtzan"]
@@ -168,7 +173,7 @@ create_config() {
     shift 1
 
     local template_dir="conf/template"
-    local config_dir="conf/${run_name}"
+    local config_dir="exp/${run_name}/conf"
     local template_path="${template_dir}/${config_prefix}_${recipe%.yaml}.yaml"
     local output_path="${config_dir}/${config_prefix}_${recipe%.yaml}.yaml"
 
@@ -196,7 +201,7 @@ construct_command_args() {
     # Only called after create_config
     local recipe=$1
     local runner=$2
-    local config_dir="conf/${run_name}"
+    local config_dir="$(pwd)/exp/${run_name}/conf"
     local config_path="${config_dir}/${config_prefix}_${recipe%.yaml}.yaml"
     local recipe_dir="$(dirname $runner)"
 
@@ -214,7 +219,7 @@ construct_command_args() {
         log "Error: Unknown task: $task_name"
         exit 1
     fi
-    cmd_args="--${task_name}_config $(pwd)/${config_path} --${task_name}_tag ${run_name} "
+    cmd_args="--${task_name}_config ${config_path} --${task_name}_tag ${run_name} "
     if [[ "${store_locally}" == true ]]; then
         cmd_args+="--datadir $(pwd)/data/${recipe} --dumpdir $(pwd)/dump/${recipe} --expdir $(pwd)/exp/${recipe} "
     fi
@@ -262,7 +267,7 @@ run_recipe() {
         if [[ "$dry_run" = true ]]; then
             log "Dry run: Would execute: (cd \"$(dirname $runner)\" && \"./$(basename $runner)\" ${runner_specific_args} ${cmd_args} ${recipe_args})"
         else
-            if [ "$parallel" = true ]; then
+            if ${parallel}; then
                 (cd "$(dirname $runner)" && "./$(basename $runner)" ${runner_specific_args} ${cmd_args} ${recipe_args} 2>&1 | tee -a "$recipe_log") &
                 log "Started $recipe|$runner in background (PID: $!)"
                 sleep "$wait_time"
@@ -301,6 +306,7 @@ failed=0
 # Run them all
 for recipe in $recipes; do
     total=$((total + 1))
+    log "------------------------------------------------------------------------------------------------------------------------"
     if run_recipe "$recipe" "$run_args"; then
         successful=$((successful + 1))
         echo "$recipe: SUCCESS" >> "$summary_file"
@@ -310,12 +316,15 @@ for recipe in $recipes; do
     fi
 done
 
+log "------------------------------------------------------------------------------------------------------------------------"
+
 # If running in parallel, wait for all background jobs
-if [ "$parallel" = true ]; then
+if ${parallel}; then
     log "Waiting for all recipes to complete..."
     wait
 
     # For parallel mode, we need to check logs for success/failure
+    # TODO(shikhar): Parse!
     total=0
     successful=0
     failed=0
@@ -323,7 +332,7 @@ if [ "$parallel" = true ]; then
     for recipe in $recipes; do
         total=$((total + 1))
         recipe_log="${exp_dir}/${recipe}.log"
-        if grep -q "Error\|Failed\|fatal" "$recipe_log"; then # TODO(shikhar): Parse!
+        if grep -q "Error\|Failed\|fatal" "$recipe_log"; then
             failed=$((failed + 1))
             echo "$recipe: FAILED (parallel run)" >> "$summary_file"
         else
