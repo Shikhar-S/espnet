@@ -19,7 +19,8 @@ mynametag=
 ssl_tag=${mynametag}.${timestamp}
 
 
-tokenizer_inf_config=conf/tokenizer_inference_beats2.yaml
+# tokenizer_inf_config=conf/tokenizer_inference_beats2.yaml
+tokenizer_inf_config=conf/tokenizer_large_100k_steps.yaml
 model_size=large
 ssl_tag=${model_size}.7p2M
 
