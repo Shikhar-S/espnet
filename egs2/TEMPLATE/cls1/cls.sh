@@ -554,12 +554,6 @@ if ! "${skip_eval}"; then
             utils/split_scp.pl "${key_file}" ${split_scps}
 
             _opts=
-            if [ "${max_wav_duration}" ]; then
-                _fs=$(python3 -c "import humanfriendly as h;print(h.parse_size('${fs}'))")
-                max_wav_duration_in_samples=$(python3 -c "print(int(${max_wav_duration} * ${_fs}))")
-                echo "WARNING: Inference with max_wav_duration set to ${max_wav_duration_in_samples} at ${fs} Hz!"
-                _opts+="--max_wav_duration ${max_wav_duration_in_samples} "
-            fi
             if ${speech_text_classification}; then
                 _opts+="--data_path_and_name_and_type ${_data}/${text_input_filename},text,text "
             fi

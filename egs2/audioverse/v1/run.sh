@@ -21,6 +21,8 @@ config_prefix="" # Template config prefix tag
 run_name="" # Name for this benchmark run
 template_args="" # Arguments to replace in the template config
 recipe_args="" # Arguments to pass to the recipe runners
+task_args="" # Arguments to pass as <task_name>_args
+log_wandb=false # Log to wandb if true. Please provide wandb_entity in task_args if true.
 
 # Help message
 help_message=$(cat << EOF
@@ -47,6 +49,9 @@ Options:
                             Note that the KEY should be in ALLCAPS.
   --recipe_args LIST        Arguments to pass to the recipe runners. These are passed as-is to the recipe runners.
                             For example: --recipe_args "--stage 4 --batch_bins 800000"
+  --task_args LIST          Arguments to pass as <task_name>_args.
+                            For example: --task_args "--wandb_project audioverse --wandb_entity shikhar"
+  --log_wandb BOOL          Log to wandb if true. Please provide wandb_entity in task_args if true.
   --help                    Display this help message
 EOF
 )
@@ -62,6 +67,13 @@ fi
 if [ -z "$run_name" ]; then
     run_name=$(date "+%Y%m%d%H%M%S")
     log "Warning: --run_name is empty we will use timestamp: $run_name"
+fi
+
+if ${log_wandb}; then
+    if [[ -z "${task_args}" || "${task_args}" != *"--wandb_entity"* ]]; then
+        log "Error: --task_args must contain --wandb_entity if --log_wandb is true"
+        exit 1
+    fi
 fi
 
 exp_dir="$(pwd)/exp/${run_name}"
@@ -104,12 +116,11 @@ recipe_runners["audioset20k"]="../../as20k/cls1/run.sh|"
 # recipe_runners["fsd50k"]="../../fsd/cls1/run.sh|"
 
 # ESC-50 folds
-recipe_runners["esc50_f1"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 1,"
-recipe_runners["esc50_f2"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 2"
-recipe_runners["esc50_f3"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 3"
-recipe_runners["esc50_f4"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 4"
-recipe_runners["esc50_f5"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 5"
-
+recipe_runners["esc50_f1"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 1 --train_set train1 --valid_set val1 --test_sets test1"
+recipe_runners["esc50_f2"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 2 --train_set train2 --valid_set val2 --test_sets test2"
+recipe_runners["esc50_f3"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 3 --train_set train3 --valid_set val3 --test_sets test3"
+recipe_runners["esc50_f4"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 4 --train_set train4 --valid_set val4 --test_sets test4"
+recipe_runners["esc50_f5"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 5 --train_set train5 --valid_set val5 --test_sets test5"
 
 # Register BEANS detection tasks
 # recipe_runners["beans_dcase"]="../../beans/cls1/run_dcase.sh|"
@@ -220,8 +231,15 @@ construct_command_args() {
         exit 1
     fi
     cmd_args="--${task_name}_config ${config_path} --${task_name}_tag ${run_name} "
-    if [[ "${store_locally}" == true ]]; then
+    if "${store_locally}"; then
         cmd_args+="--datadir $(pwd)/data/${recipe} --dumpdir $(pwd)/dump/${recipe} --expdir $(pwd)/exp/${recipe} "
+    fi
+
+    task_args_header="--${task_name}_args"
+    task_args_="--wandb_project audioverse --wandb_entity shikhar --wandb_name ${recipe}.${run_name}"
+    task_args_+=" ${task_args}"
+    if [[ "${log_wandb}" == "true" || -n "${task_args}" ]]; then
+        cmd_args+="${task_args_header} '${task_args_}' "
     fi
 
     echo "$cmd_args"
