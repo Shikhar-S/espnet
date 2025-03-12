@@ -4,7 +4,7 @@ These experiments analyze the impact of temporal ratio of "interesting events" t
 
 We compare two pre-trained model variants - all_cuts (base dataset) and all_cuts_noise (with augmented noise) - each on two variants differentiated by tokenizer initialization. 
 
-Results indicate that the choice of tokenizer significantly affects model performance.
+Results indicate that the choice of tokenizer significantly affects model performance and a bad temporal ratio leads to an underperforming model (especially if the tokenizer is not well trained).
 
 ## Dataset details
 
@@ -20,21 +20,31 @@ Results indicate that the choice of tokenizer significantly affects model perfor
 
 ## Results
 
+### Full fine-tuning
+
 | Model Name        | Tokenizer Type       | Test Mean Acc (%) | Pre-training corpus | Pre-training steps |
 |-------------------|----------------------|-------------------| --------------------| -- |
 | all_cuts         | Random               | 85.55             | Watkins cut tapes   | 100k |
 | all_cuts         | BEATs (iter 3)       | 87.91             | Watkins cut tapes   | 100k |
 | all_cuts_noise   | Random               | 78.76             | Watkins cut tapes with noise   | 100k |
 | all_cuts_noise   | BEATs (iter 3)       | 89.09             | Watkins cut tapes with noise   | 100k |
-| BEATs iter 3      | BEATs (iter 2)       | 89.4              | Audioset   | 400k |
+| BEATs iter 3      | BEATs (iter 2)       | 89.40              | Audioset   | 400k |
+
+### Linear probing
+
+| Model Name        | Tokenizer Type       | Test Mean Acc (%) | Pre-training corpus | Pre-training steps |
+|-------------------|----------------------|-------------------| --------------------| --------------------|
+| all_cuts         | Random               | 51.62            | Watkins cut tapes   | 100k |
+| all_cuts         | BEATs (iter 3)       | 73.16             | Watkins cut tapes   | 100k |
+| all_cuts_noise   | Random               | 33.04             | Watkins cut tapes with noise   | 100k |
+| all_cuts_noise   | BEATs (iter 3)       | 64.31             | Watkins cut tapes with noise   | 100k |
 
 
 
 ### Model Variations
 
-- **Iterations**:
-  - **Tokenizer type random**: Training targets are generated via a random tokenizer (BEST-RQ style)
-  - **BEATs iteration 3**: This is a self-distilled tokenizer created from BEATs iteration 3 encoder.
+- **Tokenizer: Random**: Training targets are generated via a random tokenizer (BEST-RQ style)
+- **Tokenizer: BEATs iteration 3**: This is a self-distilled tokenizer created from BEATs iteration 3 encoder.
 - **All encoders** were trained from scratch
 
 ## Training Parameters
@@ -56,8 +66,6 @@ Results indicate that the choice of tokenizer significantly affects model perfor
 - **Metric**: Classification accuracy
 
 ## Key Findings
-
-### Performance Analysis
 
 1. **Tokenizer Impact**:
    - Models using the BEATs iteration 3 tokenizer consistently outperformed those with random tokenizers

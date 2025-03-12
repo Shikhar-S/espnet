@@ -96,8 +96,8 @@ for set in cut_tapes cut_tapes_noise; do
         storage_dir_=/work/nvme/bbjs/sbharadwaj/watkins_ssl
         datadir=/work/nvme/bbjs/sbharadwaj/espnet/egs2/audioverse/v1/data/beans_watkins
         dumpdir=/work/nvme/bbjs/sbharadwaj/espnet/egs2/audioverse/v1/dump/beans_watkins
-        expdir=${storage_dir_}/exp/freeze.${set}.${iter}
-        (cd ../../beans/cls1 && ./run_watkins.sh --cls_tag ${set}.${iter} --datadir ${datadir} --dumpdir ${dumpdir} --expdir ${expdir} --stage 6 --cls_config ${run_config}) &
+        expdir=${storage_dir_}/exp/${set}.${iter}
+        (cd ../../beans/cls1 && ./run_watkins.sh --cls_tag freeze.${set}.${iter} --datadir ${datadir} --dumpdir ${dumpdir} --expdir ${expdir} --stage 6 --cls_config ${run_config}) &
         echo "----"
     done
 done
