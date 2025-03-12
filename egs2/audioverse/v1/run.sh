@@ -17,7 +17,7 @@ store_locally=true # If true all runs will have data, dump and expdir in current
 dry_run=false # Do not run just print commands
 filter_recipe=none # Filter recipes by name. Default none
 recipe="" # Specific recipes to run, takes precedence. Default is all
-config_prefix="" # Template config prefix tag
+config_prefix="" # Template config prefix tag. This should be a directory inside conf/template.
 run_name="" # Name for this benchmark run
 template_args="" # Arguments to replace in the template config
 recipe_args="" # Arguments to pass to the recipe runners
@@ -42,7 +42,7 @@ Options:
 
   # Config
   --config_prefix STRING    Prefix for the config template of this run. The config path is expected to be
-                            conf/template/{config_prefix}_{recipe_name}.yaml
+                            conf/template/{config_prefix}/{recipe_name}.yaml
   --run_name STRING         Name for this benchmark run (default: timestamp)
   --template_args LIST      Arguments to replace in the template config. Comma-separated list of KEY:value pairs.
                             For example: --template_args "BEATS_CHECKPOINT_PATH:/path/to/checkpoint"
@@ -186,8 +186,8 @@ create_config() {
 
     local template_dir="conf/template"
     local config_dir="exp/${run_name}/conf"
-    local template_path="${template_dir}/${config_prefix}_${recipe%.yaml}.yaml"
-    local output_path="${config_dir}/${config_prefix}_${recipe%.yaml}.yaml"
+    local template_path="${template_dir}/${config_prefix}/${recipe%.yaml}.yaml"
+    local output_path="${config_dir}/${config_prefix}/${recipe%.yaml}.yaml"
 
     mkdir -p "$(dirname "$output_path")"
     if [ ! -f "$template_path" ]; then
@@ -214,7 +214,7 @@ construct_command_args() {
     local recipe=$1
     local runner=$2
     local config_dir="$(pwd)/exp/${run_name}/conf"
-    local config_path="${config_dir}/${config_prefix}_${recipe%.yaml}.yaml"
+    local config_path="${config_dir}/${config_prefix}/${recipe%.yaml}.yaml"
     local recipe_dir="$(dirname $runner)"
 
     if [ ! -d "$recipe_dir" ]; then
