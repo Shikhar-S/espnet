@@ -1,6 +1,20 @@
-#!/usr/bin/env bash
-# Set bash to 'debug' mode, it will exit on :
-# -e 'error', -u 'undefined variable', -o ... 'error in pipeline', -x 'print commands',
+#!/bin/bash
+#SBATCH --job-name=watkins_ssl
+#SBATCH --account=bbjs-delta-cpu
+#SBATCH --partition=cpu
+#SBATCH --cpus-per-task=70
+#SBATCH --mem=200G
+#SBATCH --time=24:00:00
+#SBATCH --output=logs/%j.watkins_ssl
+
+mkdir -p logs
+
+. ./db.sh
+. ./path.sh
+
+PARALLELISM=64
+echo $(which python)
+
 set -e
 set -u
 set -o pipefail
@@ -20,8 +34,8 @@ log "$0 $*"
 # Parse arguments
 WRITE_DIR=/work/nvme/bbjs/sbharadwaj/watkins_ssl/data
 READ_DIR=/work/hdd/bbjs/shared/corpora/watkins_marine/scraped_data
-
-for set in master_tapes cut_tapes; do
+# master_tapes 
+for set in cut_tapes; do
     mkdir -p ${WRITE_DIR}/${set}
     log "Processing Watkins dataset from ${READ_DIR}/${set}"
     python3 local/data_prep_watkins_ssl.py ${READ_DIR}/${set} ${WRITE_DIR}/${set}

@@ -141,6 +141,7 @@ recipe_runners["beans_dogs"]="../../beans/cls1/run_dogs.sh|"
 # recipe_runners["nsynth"]
 # recipe_runners["dcase24_machine"]
 
+
 generate_recipe_list() {
     local recipes_to_run=()
 
@@ -236,13 +237,13 @@ construct_command_args() {
     fi
 
     task_args_header="--${task_name}_args"
-    task_args_="--wandb_project audioverse --wandb_entity shikhar --wandb_name ${recipe}.${run_name}"
+    task_args_="--use_wandb ${log_wandb} --wandb_project audioverse --wandb_entity shikhar --wandb_name ${recipe}.${run_name}"
     task_args_+=" ${task_args}"
     if [[ "${log_wandb}" == "true" || -n "${task_args}" ]]; then
-        cmd_args+="${task_args_header} '${task_args_}' "
+        cmd_args+="${task_args_header} \"${task_args_}\" "
     fi
 
-    echo "$cmd_args"
+    echo "${cmd_args}"
     return 0
 }
 
@@ -282,15 +283,17 @@ run_recipe() {
         log "Running command: $runner with args: ${runner_specific_args} ${cmd_args} ${recipe_args}"
         log "Output will be saved to: $recipe_log"
 
+        command="cd \"$(dirname "$runner")\" && \"./$(basename "$runner")\" ${runner_specific_args} ${cmd_args} ${recipe_args}"
+
         if [[ "$dry_run" = true ]]; then
-            log "Dry run: Would execute: (cd \"$(dirname $runner)\" && \"./$(basename $runner)\" ${runner_specific_args} ${cmd_args} ${recipe_args})"
+            log "Dry run: Would execute: eval \"$command\""
         else
             if ${parallel}; then
-                (cd "$(dirname $runner)" && "./$(basename $runner)" ${runner_specific_args} ${cmd_args} ${recipe_args} 2>&1 | tee -a "$recipe_log") &
+                eval "($command 2>&1 | tee -a \"$recipe_log\") &"
                 log "Started $recipe|$runner in background (PID: $!)"
                 sleep "$wait_time"
             else
-                (cd "$(dirname $runner)" && "./$(basename $runner)" ${runner_specific_args} ${cmd_args} ${recipe_args} 2>&1 | tee -a "$recipe_log") || {
+                eval "($command 2>&1 | tee -a \"$recipe_log\")" || {
                     log "Error: Recipe $recipe|$runner failed"
                     success=false
                 }
