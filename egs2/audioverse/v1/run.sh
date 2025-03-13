@@ -116,11 +116,11 @@ recipe_runners["audioset20k"]="../../as20k/cls1/run.sh|"
 # recipe_runners["fsd50k"]="../../fsd/cls1/run.sh|"
 
 # ESC-50 folds
-recipe_runners["esc50_f1"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 1 --train_set train1 --valid_set val1 --test_sets test1"
-recipe_runners["esc50_f2"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 2 --train_set train2 --valid_set val2 --test_sets test2"
-recipe_runners["esc50_f3"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 3 --train_set train3 --valid_set val3 --test_sets test3"
-recipe_runners["esc50_f4"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 4 --train_set train4 --valid_set val4 --test_sets test4"
-recipe_runners["esc50_f5"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 5 --train_set train5 --valid_set val5 --test_sets test5"
+recipe_runners["esc50_f1"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 1 --train_set train1 --valid_set val1 --test_sets val1"
+recipe_runners["esc50_f2"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 2 --train_set train2 --valid_set val2 --test_sets val2"
+recipe_runners["esc50_f3"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 3 --train_set train3 --valid_set val3 --test_sets val3"
+recipe_runners["esc50_f4"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 4 --train_set train4 --valid_set val4 --test_sets val4"
+recipe_runners["esc50_f5"]="../../esc50/cls1/run_single_fold.sh|--local_data_opts 5 --train_set train5 --valid_set val5 --test_sets val5"
 
 # Register BEANS detection tasks
 # recipe_runners["beans_dcase"]="../../beans/cls1/run_dcase.sh|"

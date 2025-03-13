@@ -30,10 +30,12 @@ test_set="val"
     --expdir "${expdir}" \
     --ngpu 1 \
     --stage 1 \
+    --gpu_inference true \
+    --decoding_batch_size 128 \
     --speech_fold_length ${speech_fold_length} \
     --label_fold_length 1 \
     --feats_normalize utterance_mvn \
-    --inference_nj 8 \
+    --inference_nj 1 \
     --cls_config "${cls_config}" \
     --train_set "${train_set}" \
     --valid_set "${valid_set}" \
