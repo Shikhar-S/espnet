@@ -311,7 +311,8 @@ generate_checkpoint() {
         return 1
     fi
 
-    ${python} espnet2/beats/generate_beats_checkpoint.py \
+    # TODO(shikhar): Move to scripts?
+    ${python} ../../../../espnet/espnet2/beats/generate_beats_checkpoint.py \
         --espnet_model_checkpoint_path "${latest_checkpoint_dir_}/${checkpoint_num_}/mp_rank_00_model_states.pt" \
         --output_path "${output_path_}" \
         --espnet_model_config_path "${run_dir_}/config.yaml" \
