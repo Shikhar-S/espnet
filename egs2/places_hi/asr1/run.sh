@@ -6,11 +6,11 @@ inference_ckpt=valid.acc.best
 
 ./asr.sh \
     --feats_normalize uttmvn \
-    --stage 1 \
+    --stage 11 \
     --stop_stage 12 \
-    --ngpu 2 \
+    --ngpu 1 \
     --gpu_inference true \
-    --nj 8 \
+    --nj 32 \
     --inference_nj 1 \
     --max_wav_duration 30 \
     --token_type char \
@@ -19,6 +19,6 @@ inference_ckpt=valid.acc.best
     --train_set train \
     --valid_set dev \
     --test_sets "dev test" \
-    --asr_config conf/conformer_transformer.yaml \
+    --asr_config conf/train_hubert_transformer.yaml \
     --asr_speech_fold_length ${asr_speech_fold_length} \
     --inference_asr_model ${inference_ckpt}.pth

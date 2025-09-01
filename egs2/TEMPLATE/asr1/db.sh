@@ -216,7 +216,7 @@ NATSUME=
 KIRITAN=
 NAMINE=
 KATHBATH=downloads
-GRAMVAANI=downloads
+GRAMVAANI=/work/hdd/bbjs/shared/corpora/gram_vaani # downloads
 SPRING_INX=downloads
 VOXCELEB=
 KSPONSPEECH=
@@ -224,7 +224,7 @@ HIFITTS=downloads
 CLOTHO_V2=downloads
 AUDIOCAPS=
 CLOTHO_CHATGPT_MIXUP=
-PLACES_HI=downloads
+PLACES_HI=/work/hdd/bbjs/shared/corpora/places/spoken_captions/PlacesHindi100k # downloads
 
 # For only CMU TIR environment
 if [[ "$(hostname)" == tir* ]]; then
