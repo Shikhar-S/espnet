@@ -25,6 +25,7 @@ import unicodedata
 import panphon.distance
 from tqdm import tqdm
 import json
+from concurrent.futures import ProcessPoolExecutor
 
 def load_json(results_file):
     """Load saved results from file"""
@@ -39,45 +40,55 @@ def save_json(data, out_file):
     print(f"Saved: {out_file}")
     return
 
-# def get_metrics(hyps, refs):
-#     ###############################################################
-#     # formatting: make them phone sequence
-#     # cleaner = {"ẽ": "ẽ", "ĩ": "ĩ", "õ": "õ", "ũ": "ũ", # nasal unicode
-#     #             "ç": "ç", "g": "ɡ", # common unicode
-#     #             "-": "", "'": "", " ":"", "͡": ""} # noise
-#     # def clean(phones):
-#     #     return "".join([cleaner.get(p, p) for p in phones])
-#     removepunc = str.maketrans('', '', string.punctuation)
-#     customized = {"g": "ɡ"}
-#     def clean(sequence):
-#         """
-#         Normalize phones' unicode so that trie search can handle everything
-#         Remove suprasegmental diacritics if specified
-#         """
-#         sequence = sequence.replace(" ", "")
-#         sequence = unicodedata.normalize('NFD', sequence)
-#         sequence = sequence.translate(removepunc)
-#         sequence = ''.join([customized.get(c, c) for c in sequence])
-#         return sequence
-#     ###############################################################
-#     hyps = [clean(x) for x in hyps]
-#     refs = [clean(x) for x in refs]
-#     # print(len(hyps), len(refs))
-#     dst = panphon.distance.Distance()
-#     result = {}
-#     texts = zip(refs, hyps)
-#     PFER = 0.0
-#     for i, (ref, hyp) in enumerate(tqdm(texts, desc="Computing FER ZIPA style")):
-#         PFER += dst.hamming_feature_edit_distance(hyp, ref)
-#     PFER /= len(refs)
-#     result['PFER'] = PFER
-#     FED = dst.feature_edit_distance(hyps, refs)
-#     FER = dst.feature_error_rate(hyps, refs ) * 100
-#     PER = dst.phoneme_error_rate(hyps, refs) * 100
-#     result.update({"FER": FER, "FED": FED, "PER": PER, "N": len(refs)})
-#     return result
+class PanphonFastDistance:
+    """Wrapper around panphon.distance.Distance with parallel-friendly methods"""
+    def __init__(self):
+        self.dst = panphon.distance.Distance()
+    
+    def compute_powsm_metrics(self, chunk):
+        """Compute all metric components for a chunk of hypothesis-reference pairs
+        
+        Returns:
+            tuple: (pfer_sum, fed_sum, per_errors, per_phones, fer_phones, n)
+        """
+        pfer_sum = 0.0
+        fed_sum = 0.0
+        per_errors = 0
+        per_phones = 0
+        fer_phones = 0
+        
+        for h, r in tqdm(chunk, desc="Processing chunk", leave=False):
+            # PFER
+            pfer_sum += self.dst.hamming_feature_edit_distance_div_maxlen(h, r) * 100.0
+            
+            # FED (also numerator for FER)
+            fed = self.dst.feature_edit_distance(h, r)
+            fed_sum += fed
+            
+            # PER
+            phoneme_edits = self.dst.min_edit_distance(
+                lambda v: 1,
+                lambda v: 1,
+                lambda x, y: 0 if x == y else 1,
+                [[]],
+                self.dst.fm.ipa_segs(h),
+                self.dst.fm.ipa_segs(r)
+            )
+            per_errors += phoneme_edits
+            
+            # Phone counts (denominators for both PER and FER)
+            r_phones = len(self.dst.fm.ipa_segs(r))
+            per_phones += r_phones
+            fer_phones += r_phones
+        
+        return pfer_sum, fed_sum, per_errors, per_phones, fer_phones, len(chunk)
 
-def get_metrics(hyps, refs):
+def compute_chunk_metrics(chunk):
+    """Worker function to compute metrics for a chunk of hypothesis-reference pairs"""
+    fast_dst = PanphonFastDistance()
+    return fast_dst.compute_powsm_metrics(chunk)
+
+def get_metrics(hyps, refs, num_workers=1):
     # Normalize inputs (remove spaces/punct, NFC->NFD, fix 'g'→'ɡ')
     removepunc = str.maketrans('', '', string.punctuation)
     customized = {"g": "ɡ"}
@@ -93,31 +104,40 @@ def get_metrics(hyps, refs):
     if N == 0:
         return {"PFER": 0.0, "FER": 0.0, "FED": 0.0, "PER": 0.0, "N": 0}
 
-    dst = panphon.distance.Distance()
+    # Parallel computation of all metrics
+    pairs = list(zip(hyps, refs))
+    chunk_size = max(1, N // num_workers)
+    chunks = [pairs[i:i+chunk_size] for i in range(0, N, chunk_size)]
+    
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        results = list(tqdm(
+            executor.map(compute_chunk_metrics, chunks),
+            total=len(chunks),
+            desc="Calculating metrics"
+        ))
+    
+    # Combine results from all chunks
+    pfer_sum = sum(r[0] for r in results)
+    fed_sum = sum(r[1] for r in results)
+    per_errors = sum(r[2] for r in results)
+    per_phones = sum(r[3] for r in results)
+    fer_phones = sum(r[4] for r in results)
 
-    # PFER: macro over utts, normalized by maxlen, scaled to percent
-    pfer_sum = 0.0
-    fed_sum = 0.0
-    for h, r in tqdm(zip(hyps, refs), total=N, desc="Calculating metrics"):
-        pfer_sum += dst.hamming_feature_edit_distance_div_maxlen(h, r) * 100.0
-        fed_sum  += dst.feature_edit_distance(h, r)
-
+    # Compute final metrics
     PFER = pfer_sum / N
-    FED  = fed_sum
-
-    # FER / PER: micro (batch helpers divide by total ref phones), scaled to %
-    FER = dst.feature_error_rate(hyps, refs) * 100.0
-    PER = dst.phoneme_error_rate(hyps, refs) * 100.0
+    FED = fed_sum
+    FER = (fed_sum / fer_phones) * 100.0 if fer_phones > 0 else 0.0
+    PER = (per_errors / per_phones) * 100.0 if per_phones > 0 else 0.0
 
     return {"PFER": PFER, "FER": FER, "FED": FED, "PER": PER, "N": N}
 
-def compute_metrics(test_data):
+def compute_metrics(test_data, num_workers=1):
     """Compute metrics"""
     hyps, refs =[], []
     for _, value in tqdm(test_data.items(), desc="Processing test data"):
         hyps.append(value['prediction'])
         refs.append(value['transcription'])
-    metrics = get_metrics(hyps, refs)
+    metrics = get_metrics(hyps, refs, num_workers)
     return metrics
 
 def main():
@@ -128,6 +148,7 @@ def main():
     parser.add_argument('--model', help='Model name for inference')
     parser.add_argument('--device', default='auto', help='Device to run inference on (e.g., cpu, cuda, auto)')
     parser.add_argument('--output_dir', default='./preds', help='Directory to save results')
+    parser.add_argument('--workers', type=int, default=1, help='Number of workers for parallel processing')
 
     args = parser.parse_args()
     prediction_file = f"{args.output_dir}/{args.dataset}.{args.model.replace('/','.')}/preds.json"
@@ -139,7 +160,7 @@ def main():
     print(f"Loaded {len(test_data)} utterances from {prediction_file}")
     
     # Compute and display results
-    metrics = compute_metrics(test_data)
+    metrics = compute_metrics(test_data, num_workers=args.workers)
     print(f"\n{args.model} on {args.dataset}")
     print("===================================")
     for k,v in metrics.items():
