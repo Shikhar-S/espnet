@@ -59,7 +59,7 @@ class PanphonFastDistance:
         
         for h, r in tqdm(chunk, desc="Processing chunk", leave=False):
             # PFER
-            pfer_sum += self.dst.hamming_feature_edit_distance_div_maxlen(h, r) * 100.0
+            pfer_sum += self.dst.hamming_feature_edit_distance(h, r)
             
             # FED (also numerator for FER)
             fed = self.dst.feature_edit_distance(h, r)
