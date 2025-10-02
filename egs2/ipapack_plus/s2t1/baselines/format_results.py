@@ -4,9 +4,11 @@ Usage:
         --path_pattern "/work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1/preds/*/metrics.json" \
         --output /work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1/preds/outputs.csv
 """
+
 import json, csv, glob, argparse
 
 COLUMNS = ["model", "dataset", "PFER", "FER", "FED", "PER", "N"]
+
 
 def fmt(x):
     try:
@@ -14,9 +16,14 @@ def fmt(x):
     except Exception:
         return x
 
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--path_pattern", required=True, help="Path pattern to search for metrics.json files")
+    ap.add_argument(
+        "--path_pattern",
+        required=True,
+        help="Path pattern to search for metrics.json files",
+    )
     ap.add_argument("--output", required=True, help="Path to save output CSV")
     args = ap.parse_args()
 
@@ -34,6 +41,7 @@ def main():
         writer = csv.DictWriter(csvf, fieldnames=COLUMNS)
         writer.writeheader()
         writer.writerows(rows)
+
 
 if __name__ == "__main__":
     main()

@@ -27,27 +27,31 @@ from tqdm import tqdm
 import json
 from concurrent.futures import ProcessPoolExecutor
 
+
 def load_json(results_file):
     """Load saved results from file"""
-    with open(results_file, 'r') as f:
+    with open(results_file, "r") as f:
         json_data = json.load(f)
     return json_data
 
+
 def save_json(data, out_file):
     """Save data to a json file"""
-    with open(out_file, 'w') as f:
-        json.dump(data, f , indent=2, ensure_ascii=False)
+    with open(out_file, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
     print(f"Saved: {out_file}")
     return
 
+
 class PanphonFastDistance:
     """Wrapper around panphon.distance.Distance with parallel-friendly methods"""
+
     def __init__(self):
         self.dst = panphon.distance.Distance()
-    
+
     def compute_powsm_metrics(self, chunk):
         """Compute all metric components for a chunk of hypothesis-reference pairs
-        
+
         Returns:
             tuple: (pfer_sum, fed_sum, per_errors, per_phones, fer_phones, n)
         """
@@ -56,15 +60,15 @@ class PanphonFastDistance:
         per_errors = 0
         per_phones = 0
         fer_phones = 0
-        
+
         for h, r in tqdm(chunk, desc="Processing chunk", leave=False):
             # PFER
             pfer_sum += self.dst.hamming_feature_edit_distance(h, r)
-            
+
             # FED (also numerator for FER)
             fed = self.dst.feature_edit_distance(h, r)
             fed_sum += fed
-            
+
             # PER
             phoneme_edits = self.dst.min_edit_distance(
                 lambda v: 1,
@@ -72,31 +76,34 @@ class PanphonFastDistance:
                 lambda x, y: 0 if x == y else 1,
                 [[]],
                 self.dst.fm.ipa_segs(h),
-                self.dst.fm.ipa_segs(r)
+                self.dst.fm.ipa_segs(r),
             )
             per_errors += phoneme_edits
-            
+
             # Phone counts (denominators for both PER and FER)
             r_phones = len(self.dst.fm.ipa_segs(r))
             per_phones += r_phones
             fer_phones += r_phones
-        
+
         return pfer_sum, fed_sum, per_errors, per_phones, fer_phones, len(chunk)
+
 
 def compute_chunk_metrics(chunk):
     """Worker function to compute metrics for a chunk of hypothesis-reference pairs"""
     fast_dst = PanphonFastDistance()
     return fast_dst.compute_powsm_metrics(chunk)
 
+
 def get_metrics(hyps, refs, num_workers=1):
     # Normalize inputs (remove spaces/punct, NFC->NFD, fix 'g'→'ɡ')
-    removepunc = str.maketrans('', '', string.punctuation)
+    removepunc = str.maketrans("", "", string.punctuation)
     customized = {"g": "ɡ"}
+
     def clean(s):
         s = s.replace(" ", "")
-        s = unicodedata.normalize('NFD', s)
+        s = unicodedata.normalize("NFD", s)
         s = s.translate(removepunc)
-        return ''.join(customized.get(c, c) for c in s)
+        return "".join(customized.get(c, c) for c in s)
 
     hyps = [clean(x) for x in hyps]
     refs = [clean(x) for x in refs]
@@ -107,15 +114,17 @@ def get_metrics(hyps, refs, num_workers=1):
     # Parallel computation of all metrics
     pairs = list(zip(hyps, refs))
     chunk_size = max(1, N // num_workers)
-    chunks = [pairs[i:i+chunk_size] for i in range(0, N, chunk_size)]
-    
+    chunks = [pairs[i : i + chunk_size] for i in range(0, N, chunk_size)]
+
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        results = list(tqdm(
-            executor.map(compute_chunk_metrics, chunks),
-            total=len(chunks),
-            desc="Calculating metrics"
-        ))
-    
+        results = list(
+            tqdm(
+                executor.map(compute_chunk_metrics, chunks),
+                total=len(chunks),
+                desc="Calculating metrics",
+            )
+        )
+
     # Combine results from all chunks
     pfer_sum = sum(r[0] for r in results)
     fed_sum = sum(r[1] for r in results)
@@ -131,42 +140,60 @@ def get_metrics(hyps, refs, num_workers=1):
 
     return {"PFER": PFER, "FER": FER, "FED": FED, "PER": PER, "N": N}
 
+
 def compute_metrics(test_data, num_workers=1):
     """Compute metrics"""
-    hyps, refs =[], []
+    hyps, refs = [], []
     for _, value in tqdm(test_data.items(), desc="Processing test data"):
-        hyps.append(value['prediction'])
-        refs.append(value['transcription'])
+        hyps.append(value["prediction"])
+        refs.append(value["transcription"])
     metrics = get_metrics(hyps, refs, num_workers)
     return metrics
 
+
 def main():
     import argparse
-    
-    parser = argparse.ArgumentParser(description='Phoneme recognition evaluation')
-    parser.add_argument('--dataset', help='Dataset name')
-    parser.add_argument('--model', help='Model name for inference')
-    parser.add_argument('--device', default='auto', help='Device to run inference on (e.g., cpu, cuda, auto)')
-    parser.add_argument('--output_dir', default='./preds', help='Directory to save results')
-    parser.add_argument('--workers', type=int, default=1, help='Number of workers for parallel processing')
+
+    parser = argparse.ArgumentParser(description="Phoneme recognition evaluation")
+    parser.add_argument("--dataset", help="Dataset name")
+    parser.add_argument("--model", help="Model name for inference")
+    parser.add_argument(
+        "--device",
+        default="auto",
+        help="Device to run inference on (e.g., cpu, cuda, auto)",
+    )
+    parser.add_argument(
+        "--output_dir", default="./preds", help="Directory to save results"
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Number of workers for parallel processing",
+    )
 
     args = parser.parse_args()
-    prediction_file = f"{args.output_dir}/{args.dataset}.{args.model.replace('/','.')}/preds.json"
-    result_file = f"{args.output_dir}/{args.dataset}.{args.model.replace('/','.')}/metrics.json"
+    prediction_file = (
+        f"{args.output_dir}/{args.dataset}.{args.model.replace('/','.')}/preds.json"
+    )
+    result_file = (
+        f"{args.output_dir}/{args.dataset}.{args.model.replace('/','.')}/metrics.json"
+    )
     os.makedirs(os.path.dirname(prediction_file), exist_ok=True)
-    
+
     print(f"Loading: {prediction_file}")
     test_data = load_json(prediction_file)
     print(f"Loaded {len(test_data)} utterances from {prediction_file}")
-    
+
     # Compute and display results
     metrics = compute_metrics(test_data, num_workers=args.workers)
     print(f"\n{args.model} on {args.dataset}")
     print("===================================")
-    for k,v in metrics.items():
+    for k, v in metrics.items():
         print(f"{k}: {v:.2f}")
     print("===================================")
-    save_json({**metrics, 'model': args.model, 'dataset': args.dataset}, result_file)
+    save_json({**metrics, "model": args.model, "dataset": args.dataset}, result_file)
+
 
 if __name__ == "__main__":
     main()
