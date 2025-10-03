@@ -8,7 +8,7 @@ For inference we need phonemizer and panphon 0.20. Run with:
     python baselines/run_inference.py \
         --dataset buckeye \
         --model powsm \
-        --num_workers 1 \
+        --num_workers 4 \
         --s2t_train_config /work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1/exp_bigpr/s2t_train_s2t_transformer_mask_norm_raw_bpe40000/config.yaml \
         --s2t_model_file /work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1/exp_bigpr/s2t_train_s2t_transformer_mask_norm_raw_bpe40000/valid.acc.ave_5best.till40epoch.pth \
         --bpemodel /work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1/data/token_list/bpe_unigram40000/bpe.model \
@@ -51,7 +51,11 @@ from functools import partial
 from tqdm import tqdm
 
 
-def _work_chunk(dataset, idxs, model_name, device, kwargs):
+def _work_chunk(args, dataset, model_name, device, kwargs):
+    worker_id, idxs = args
+    if torch.cuda.is_available() and torch.cuda.device_count() > 1 and device != "cpu":
+        device = f"cuda:{worker_id % torch.cuda.device_count()}"
+
     model = get_inference_model(model_name, device=device, **kwargs)
     out = {}
     for i in tqdm(idxs, desc="Processing", leave=False):
@@ -86,11 +90,13 @@ def run_inference(
         range(i * cs, min((i + 1) * cs, N)) for i in range(num_workers) if i * cs < N
     ]
     worker = partial(
-        _work_chunk, ds, model_name=model, device=device, kwargs=model_kwargs
+        _work_chunk, dataset=ds, model_name=model, device=device, kwargs=model_kwargs
     )
 
     with mp.get_context("spawn").Pool(num_workers) as pool:
-        parts = list(tqdm(pool.imap(worker, chunks), total=len(chunks), desc="Chunks"))
+        parts = list(
+            tqdm(pool.imap(worker, enumerate(chunks)), total=len(chunks), desc="Chunks")
+        )
     out = {}
     for p in parts:
         out.update(p)
