@@ -53,7 +53,7 @@ class PowsmDataset(Dataset):
         key2lang = {}
         with open(path) as f:
             for line in f:
-                key, tag = line.strip().split()
+                key, tag = line.strip().split()[:2]
                 if key.endswith("_pr"):
                     key = key[
                         :-3
