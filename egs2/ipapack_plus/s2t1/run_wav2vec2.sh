@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=powsminference
-#SBATCH --account=bbjs-delta-gpu
-#SBATCH --partition=gpuA40x4
+#SBATCH --job-name=wav2vec2
+#SBATCH --account=bbjs-dtai-gh
+#SBATCH --partition=ghx4
 #SBATCH --gpus-per-node=1
-#SBATCH --cpus-per-task=5
-#SBATCH --mem=64G
-#SBATCH --time=20:00:00
+#SBATCH --cpus-per-task=72
+#SBATCH --mem=120G
+#SBATCH --time=24:00:00
 #SBATCH --output=logs/%x-%j.out
 
 # --- user vars ---
-CONDA_ENV="powsm2"
+CONDA_ENV="transformers"
+export PHONEMIZER_ESPEAK_LIBRARY="/work/nvme/bbjs/sbharadwaj/powsm/dai_dependencies/espeak-ng/src/.libs/libespeak-ng.so.1.1.51"
+export ESPEAK_DATA_PATH="/work/nvme/bbjs/sbharadwaj/powsm/dai_dependencies/espeak-ng/espeak-ng-data"
+# --- user vars ---
 PROJ="/work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1"
-ESPEAK_LIB="/work/nvme/bbjs/sbharadwaj/powsm/espeak-ng/installed/lib/libespeak-ng.so.1.1.51"
-DATASET="l2arctic_perceived"
+DATASET="buckeye"
 MODEL_ID="facebook/wav2vec2-lv-60-espeak-cv-ft"
 # call this script like sbatch run_baseline_inference.sh --dataset D --model M to override defaults
 # ------------------
@@ -23,13 +25,9 @@ set -euo pipefail
 source /u/sbharadwaj/conda/etc/profile.d/conda.sh
 conda activate "$CONDA_ENV"
 
-# Inference requires phonemizer + panphon==0.20
-export PHONEMIZER_ESPEAK_LIBRARY="${ESPEAK_LIB}"
-
 cd "$PROJ"
 
 srun -u python baselines/run_inference.py \
   --dataset "${DATASET}" \
-  --model "${MODEL_ID}" "$@"
-
-  #gpuA100x4
+  --model "${MODEL_ID}" \
+  --num_workers 5 "$@"

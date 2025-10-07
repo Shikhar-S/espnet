@@ -40,8 +40,16 @@ Available datasets:
 import os
 from tqdm import tqdm
 import json
-from egs2.ipapack_plus.s2t1.baselines.inference_modules import get_inference_model
-from egs2.ipapack_plus.s2t1.baselines.powsm_dataset import get_inference_dataset
+
+try:
+    from egs2.ipapack_plus.s2t1.baselines.inference_modules import get_inference_model
+except:
+    from inference_modules import get_inference_model
+
+try:
+    from egs2.ipapack_plus.s2t1.baselines.powsm_dataset import get_inference_dataset
+except:
+    from powsm_dataset import get_inference_dataset
 import torch
 import multiprocessing as mp
 from functools import partial
@@ -78,12 +86,19 @@ def run_inference(
     ds = get_inference_dataset(dataset, dataset_config_path=dataset_config)
     # ds = [ds[kk] for kk in range(10)]  # DEBUGGING
     print(
-        f"Running inference on {len(ds)} utterances using {model} on {device} with {num_workers} workers"
+        f"Running inference on {len(ds)} utterances using {model} on"
+        f" {device} with {num_workers} workers and kwargs: {model_kwargs}"
     )
 
     N = len(ds)
     if num_workers <= 1:
-        return _work_chunk(ds, range(N), model, device, model_kwargs)
+        return _work_chunk(
+            args=(0, range(N)),
+            dataset=ds,
+            model_name=model,
+            device=device,
+            kwargs=model_kwargs,
+        )
 
     cs = (N + num_workers - 1) // num_workers
     chunks = [
@@ -152,7 +167,7 @@ def main():
     parser.add_argument(
         "--text_prev", default="<na>", type=str, help="Previous text input"
     )
-    parser.add_argument("--lang_sym", default="<unk>", type=str, help="Language symbol")
+    parser.add_argument("--lang_sym", default="unk", type=str, help="Language symbol")
     parser.add_argument("--task_sym", default="<pr>", type=str, help="Task symbol")
     parser.add_argument(
         "--return_ctc",
@@ -171,7 +186,7 @@ def main():
 
     # Prepare model-specific kwargs
     model_kwargs = {}
-    if args.model == "powsm":
+    if args.model.startswith("powsm"):
         model_kwargs = {
             "s2t_train_config": args.s2t_train_config,
             "s2t_model_file": args.s2t_model_file,
@@ -184,7 +199,7 @@ def main():
             "return_ctc": args.return_ctc,
         }
 
-    print(f"Running: {args.model}")
+    print(f"Running: {args.model} on {args.dataset}")
     test_data = run_inference(
         args.dataset,
         args.dataset_config,

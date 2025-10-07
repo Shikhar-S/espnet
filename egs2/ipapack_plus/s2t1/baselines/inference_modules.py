@@ -196,13 +196,10 @@ class Wav2Vec2PhonemeInference:
         return recognized
 
 
-import torch
-import soundfile as sf
-from espnet2.bin.s2t_inference import Speech2Text
-
-
 class PowsmInference:
     def __init__(self, device="cpu", **kwargs):
+        from espnet2.bin.s2t_inference import Speech2Text
+
         self.device = device
         self.s2t_train_config = kwargs.get("s2t_train_config")
         self.s2t_model_file = kwargs.get("s2t_model_file")
@@ -225,7 +222,7 @@ class PowsmInference:
             device=device,
         )
         self.text_prev = kwargs.get("text_prev", "<na>")
-        self.lang_sym = kwargs.get("lang_sym", "<unk>")
+        self.lang_sym = kwargs.get("lang_sym", "unk")
         self.task_sym = kwargs.get("task_sym", "<pr>")
         self.return_ctc = kwargs.get("return_ctc", False)
 
@@ -244,9 +241,21 @@ class PowsmInference:
             task_sym = input_batch.get("task_sym", self.task_sym)
 
             # Run inference
-            results = self.model(
-                speech, text_prev=text_prev, lang_sym=lang_sym, task_sym=task_sym
-            )
+            try:
+                results = self.model(
+                    speech,
+                    text_prev=text_prev,
+                    lang_sym=f"<{lang_sym}>",
+                    task_sym=task_sym,
+                )
+            except:
+                print(
+                    f"Error processing input with key: {input_batch.get('key', 'unknown')},"
+                    f" language {lang_sym}, running with <unk>."
+                )
+                results = self.model(
+                    speech, text_prev=text_prev, lang_sym="<unk>", task_sym=task_sym
+                )
 
             # Return CTC states or transcription based on configuration
             if self.return_ctc:

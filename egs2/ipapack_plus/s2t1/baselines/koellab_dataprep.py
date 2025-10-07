@@ -6,9 +6,10 @@ Usage:
         --output_dir /work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_epadb \
         --cache_dir /work/nvme/bbjs/sbharadwaj/hf_datasets
     
-    python dataprep/koellab.py \
-        --dataset "KoelLabs/SpeechOceanNoTH" \
-        --output_dir  /work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_speechoceannotth \
+    python baselines/koellab_dataprep.py \
+        --dataset "KoelLabs/L2Arctic" \
+        --output_dir  /work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_l2arctickoel \
+        --splits scripted \
         --cache_dir /work/nvme/bbjs/sbharadwaj/hf_datasets
 """
 
@@ -334,6 +335,49 @@ class SpeechOceanNoTHProcessor(DatasetProcessor):
         return "<eng>"
 
 
+class L2ArcticProcessor(DatasetProcessor):
+    """Processor for L2Arctic dataset"""
+
+    def __init__(
+        self, output_dir: str, cache_dir: str = None, sampling_rate: int = 16000
+    ):
+        super().__init__(output_dir, sampling_rate)
+        self.cache_dir = cache_dir
+        if cache_dir:
+            os.environ["HF_DATASETS_CACHE"] = cache_dir
+
+    def load_dataset(self, split: str = 'scripted') -> Dataset:
+        """Load L2Arctic dataset split"""
+        dataset = load_dataset("KoelLabs/L2Arctic")
+        # train_ds = dataset["spontaneous"]
+        # test_ds = dataset["scripted"]
+        ds = dataset[split]
+        return list(ds)
+
+    def extract_fields(self, sample: Dict[str, Any]) -> Tuple[str, Any, str, str]:
+        """Extract fields from L2Arctic sample"""
+        # {'audio': <datasets.features._torchcodec.AudioDecoder object at 0x7f744b099660>, 'ipa': 'lɛtspleɪsɔkə', 'text': " let's play soccer ", 'speaker_code': 'spkr103'}
+        speaker = sample["speaker_code"]
+        utt_id = f"{speaker}-{hash(sample['text'])}"
+        audiosample = sample["audio"].get_all_samples()
+        assert audiosample.duration_seconds < 20, "Audio longer than 20 seconds! Skip!"
+
+        return {
+            "utt_id": utt_id,
+            "audio_data": audiosample.data,
+            "sample_rate": audiosample.sample_rate,
+            "duration": audiosample.duration_seconds,
+            "text": sample["text"].strip(),
+            "phonemes": sample["ipa"].strip(),
+            "speaker_id": speaker,
+        }
+
+    def get_language_tag(self, sample: Dict[str, Any]) -> str:
+        """Get language tag (L2Arctic is English with various accents)"""
+        return "<eng>"
+
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate Kaldi-style files from HuggingFace datasets"
@@ -342,7 +386,7 @@ def main():
         "--dataset",
         type=str,
         default="KoelLabs/EpaDB",
-        choices=["KoelLabs/DoReCo", "KoelLabs/EpaDB", "KoelLabs/SpeechOceanNoTH"],
+        choices=["KoelLabs/DoReCo", "KoelLabs/EpaDB", "KoelLabs/SpeechOceanNoTH", "KoelLabs/L2Arctic"],
         help="Dataset to process",
     )
     parser.add_argument(
@@ -367,6 +411,8 @@ def main():
         processor = DoReCoProcessor(args.output_dir, args.cache_dir)
     elif args.dataset == "KoelLabs/SpeechOceanNoTH":
         processor = SpeechOceanNoTHProcessor(args.output_dir, args.cache_dir)
+    elif args.dataset == "KoelLabs/L2Arctic":
+        processor = L2ArcticProcessor(args.output_dir, args.cache_dir)
     else:
         raise ValueError(f"Unsupported dataset: {args.dataset}")
 

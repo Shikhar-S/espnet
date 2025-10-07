@@ -1,7 +1,7 @@
 """Format results from multiple metrics.json files into a single CSV.
 Usage:
     python baselines/format_results.py \
-        --path_pattern "/work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1/preds/*/metrics.json" \
+        --path_pattern "/work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1/preds/*ck50*/metrics.json" \
         --output /work/nvme/bbjs/sbharadwaj/powsm/espnet/egs2/ipapack_plus/s2t1/preds/outputs.csv
 """
 

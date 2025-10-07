@@ -2,3 +2,5 @@ preds*
 logs
 preds_segmentation
 plots
+exp*
+sampled_items
