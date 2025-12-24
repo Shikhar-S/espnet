@@ -223,7 +223,6 @@ class MultiHeadedAttention(nn.Module):
                         cu_seqlens_k,
                         max_seqlen_q,
                         max_seqlen_k,
-                        dropout_p=self.dropout_rate if self.training else 0.0,
                         causal=self.causal,
                     )  # (total, nheads, headdim)
 
@@ -243,7 +242,6 @@ class MultiHeadedAttention(nn.Module):
                         q.transpose(1, 2),
                         k.transpose(1, 2),
                         v.transpose(1, 2),
-                        dropout_p=self.dropout_rate if self.training else 0.0,
                         causal=self.causal,
                     )  # (batch_size, seqlen, nheads, headdim)
                     del q, k, v
