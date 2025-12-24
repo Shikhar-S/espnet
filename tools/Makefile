@@ -29,7 +29,7 @@ WITH_OMP=ON
 
 all: showenv conda_packages.done python ffmpeg.done sctk check_install
 
-python: activate_python.sh setuptools.done packaging.done espnet.done pytorch.done fairscale.done torch_optimizer.done flash_attn.done lightning.done
+python: activate_python.sh setuptools.done packaging.done espnet.done pytorch.done fairscale.done torch_optimizer.done flash_attn.done
 extra: warp-transducer.done nkf.done moses.done mwerSegmenter.done pesq kenlm.done pyopenjtalk.done py3mmseg.done beamformit.done fairseq.done s3prl.done k2.done transformers.done phonemizer.done longformer.done muskits.done whisper.done rvad_fast.done sounfile_test parallel-wavegan.done lora.done sph2pipe torcheval.done
 
 activate_python.sh:
@@ -68,7 +68,7 @@ sndfile.done: activate_python.sh
 	. ./activate_python.sh && { conda install -y libsndfile -c conda-forge; }
 	touch sndfile.done
 ifneq ($(strip $(USE_CONDA)),)
-conda_packages.done: bc.done cmake.done flac.done sox.done sndfile.done
+conda_packages.done: bc.done cmake.done flac.done sndfile.done
 else
 conda_packages.done:
 endif
@@ -126,7 +126,7 @@ lightning.done: pytorch.done
 	touch lightning.done
 
 # NOTE(kamo): conda_packages is not necessary for installation of espnet, but add it the dependencies just in case.
-espnet.done: pytorch.done conda_packages.done lightning.done
+espnet.done: pytorch.done conda_packages.done 
 	@echo NUMPY_VERSION=$(shell . ./activate_python.sh && python3 -c "import numpy; print(numpy.__version__)")
 	# Install additional packages that cannot be included in setup.py due to package build issues.
 	. ./activate_python.sh && python3 -m pip install git+https://github.com/espnet/g2p.git@053dfa9  # https://github.com/espnet/g2p/pull/1

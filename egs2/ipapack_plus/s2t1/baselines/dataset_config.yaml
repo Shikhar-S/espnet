@@ -111,3 +111,13 @@ datasets:
     wav_scp: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_voxangeles/wav.scp"
     text_phoneme: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_voxangeles/text.good"
     language: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_voxangeles/text"
+  
+  l2arctic_koel:
+    wav_scp: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_l2arctickoel/wav.scp"
+    text_phoneme: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_l2arctickoel/text.good"
+    language: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_l2arctickoel/text"
+  
+  l2arctic_perceived:
+    wav_scp: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_l2arctic_perceived/wav.scp"
+    text_phoneme: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_l2arctic_perceived/text.good"
+    language: "/work/hdd/bbjs/shared/powsm/s2t1/dump/raw/test_l2arctic_perceived/text"

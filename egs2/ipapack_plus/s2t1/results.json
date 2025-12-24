@@ -1,0 +1,14 @@
+{
+  "entries": 10254,
+  "total_phonemes": 236193,
+  "used_phonemes": 81134,
+  "missing_phonemes": 50707,
+  "pbe_ms": 127.66044259303175,
+  "pbe_std_ms": 39.59897621169501,
+  "pbe_median_ms": 137.61195161290397,
+  "mean_start_error_ms": 144.53366874553208,
+  "mean_end_error_ms": 101.96400857099098,
+  "mean_boundary_error_ms": 123.24883865826155,
+  "mean_gt_duration_ms": 82.81944890426692,
+  "mean_pred_duration_ms": 21.532279931964403
+}
