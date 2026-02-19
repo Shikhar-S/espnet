@@ -243,6 +243,7 @@ class EBranchformerCTCEncoder(AbsEncoder):
     ):
         super().__init__()
         self._output_size = output_size
+        self.n_layers = num_blocks
 
         if rel_pos_type == "legacy":
             if pos_enc_layer_type == "rel_pos":
@@ -477,6 +478,7 @@ class EBranchformerCTCEncoder(AbsEncoder):
         prefix_embeds: torch.tensor = None,  # (batch, 2, output_size)
         memory=None,
         memory_mask=None,
+        return_all_hs: bool = False,  # NEW: Added support for return_all_hs
     ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """Calculate forward propagation.
 
@@ -486,10 +488,12 @@ class EBranchformerCTCEncoder(AbsEncoder):
             prev_states (torch.Tensor): Not to be used now.
             ctc (CTC): Intermediate CTC module.
             max_layer (int): Layer depth below which InterCTC is applied.
+            return_all_hs (bool): If True, return all intermediate hidden states.
         Returns:
             torch.Tensor: Output tensor (#batch, L, output_size).
             torch.Tensor: Output length (#batch).
             torch.Tensor: Not to be used now.
+            If return_all_hs=True, returns (xs_pad, intermediate_outs) instead of just xs_pad.
         """
 
         masks = (~make_pad_mask(ilens)[:, None, :]).to(xs_pad.device)
@@ -517,10 +521,18 @@ class EBranchformerCTCEncoder(AbsEncoder):
             xs_pad = self.embed(xs_pad)
 
         intermediate_outs = []
+        all_intermediate_outs = []
         for layer_idx, encoder_layer in enumerate(self.encoders):
             xs_pad, masks = encoder_layer(
                 xs_pad, masks, memory=memory, memory_mask=memory_mask
             )
+
+            # NEW: Collect intermediate outputs when return_all_hs=True
+            if return_all_hs:
+                if isinstance(xs_pad, tuple):
+                    all_intermediate_outs.append(xs_pad[0])
+                else:
+                    all_intermediate_outs.append(xs_pad)
 
             if layer_idx + 1 in self.interctc_layer_idx:
                 encoder_out = xs_pad
@@ -548,6 +560,10 @@ class EBranchformerCTCEncoder(AbsEncoder):
 
         xs_pad = self.after_norm(xs_pad)
         olens = masks.squeeze(1).sum(1)
+
+        # NEW: Return intermediate outputs when return_all_hs=True
+        if return_all_hs:
+            return (xs_pad, all_intermediate_outs), olens, None
         if len(intermediate_outs) > 0:
             return (xs_pad, intermediate_outs), olens, None
         return xs_pad, olens, None

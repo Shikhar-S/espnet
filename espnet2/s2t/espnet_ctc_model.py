@@ -113,6 +113,7 @@ class ESPnetS2TCTCModel(AbsESPnetModel):
         text_prev_lengths: torch.Tensor,
         prefix: torch.Tensor,
         prefix_lengths: torch.Tensor,
+        return_all_hs: bool = False,
     ):
         """Encode input speech."""
 
@@ -144,6 +145,7 @@ class ESPnetS2TCTCModel(AbsESPnetModel):
             prefix_embeds=self.embed_proj(self.embed(prefix)),
             memory=self.prompt_proj(memory),
             memory_mask=memory_mask,
+            return_all_hs=return_all_hs,
         )
         return encoder_out, encoder_out_lens
 
