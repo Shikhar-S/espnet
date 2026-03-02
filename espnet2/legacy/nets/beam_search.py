@@ -83,9 +83,6 @@ class BeamSearch(torch.nn.Module):
             w = weights.get(k, 0)
             if w == 0 or v is None:
                 continue
-            assert isinstance(
-                v, ScorerInterface
-            ), f"{k} ({type(v)}) does not implement ScorerInterface"
             self.scorers[k] = v
             if isinstance(v, PartialScorerInterface):
                 self.part_scorers[k] = v
